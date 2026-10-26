@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام المحادثات | NexusChat</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Cairo Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .glass {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 min-h-screen text-slate-100 flex items-center justify-center p-2 sm:p-4">
+
+  <div id="app" class="w-full max-w-5xl h-[90vh] glass rounded-3xl shadow-2xl overflow-hidden flex flex-col text-slate-800 relative border border-slate-700/30">
+
+    <!-- ================= AUTH CONTAINER ================= -->
+    <div id="auth-screen" class="absolute inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4">
+      <div class="w-full max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-6 sm:p-8 shadow-2xl text-slate-100">
+        
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600/20 text-indigo-400 mb-3 border border-indigo-500/30">
+            <i class="fa-solid fa-comments text-3xl"></i>
+          </div>
+          <h2 id="auth-title" class="text-2xl font-bold">تسجيل الدخول</h2>
+          <p id="auth-subtitle" class="text-sm text-slate-400 mt-1">مرحباً بك مجدداً! أدخل بياناتك للبدء</p>
+        </div>
+
+        <!-- Alert Notification -->
+        <div id="auth-alert" class="hidden mb-4 p-3 rounded-xl text-xs font-semibold text-center border"></div>
+
+        <form id="auth-form" onsubmit="handleAuthSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">اسم المستخدم (Username)</label>
+            <div class="relative">
+              <span class="absolute right-3 top-3 text-slate-400"><i class="fa-solid fa-user"></i></span>
+              <input type="text" id="username-input" required placeholder="مثال: ahmed_dev" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pr-10 pl-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white placeholder-slate-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">كلمة السر</label>
+            <div class="relative">
+              <span class="absolute right-3 top-3 text-slate-400"><i class="fa-solid fa-lock"></i></span>
+              <input type="password" id="password-input" required placeholder="••••••••" class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pr-10 pl-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-white placeholder-slate-500">
+            </div>
+          </div>
+
+          <button type="submit" id="auth-submit-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white rounded-xl font-bold transition shadow-lg shadow-indigo-600/30 text-sm">
+            تسجيل الدخول
+          </button>
+        </form>
+
+        <div class="mt-6 pt-4 border-t border-slate-700/60 text-center">
+          <p id="auth-toggle-text" class="text-xs text-slate-400">
+            ليس لديك حساب؟ 
+            <button onclick="toggleAuthMode()" class="text-indigo-400 font-bold hover:underline mr-1">إنشاء حساب جديد</button>
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= MAIN CHAT APP ================= -->
+    <div id="main-app" class="w-full h-full flex flex-col md:flex-row bg-slate-900 text-slate-100 hidden">
+      
+      <!-- SIDEBAR -->
+      <aside id="sidebar" class="w-full md:w-80 border-l border-slate-800 flex flex-col bg-slate-900/90 h-full">
+        <!-- User Info Bar -->
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900">
+          <div class="flex items-center gap-3">
+            <div id="user-avatar" class="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white uppercase text-lg shadow-md">
+              U
+            </div>
+            <div>
+              <h3 id="display-user-name" class="font-bold text-sm text-white">المستخدم</h3>
+              <span class="inline-flex items-center text-[10px] text-emerald-400 gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> متصل الان
+              </span>
+            </div>
+          </div>
+          <button onclick="logout()" title="تسجيل الخروج" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition flex items-center justify-center">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+
+        <!-- Search Bar Section -->
+        <div class="p-3 border-b border-slate-800 bg-slate-900/50">
+          <label class="block text-xs font-semibold text-slate-400 mb-1.5"><i class="fa-solid fa-magnifying-glass ml-1"></i> البحث عن مستخدم:</label>
+          <div class="flex gap-2">
+            <input type="text" id="search-username-input" placeholder="أدخل اسم المستخدم..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+            <button onclick="searchUser()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition">
+              بحث
+            </button>
+          </div>
+          <!-- Search Result Popup / Section -->
+          <div id="search-result-container" class="mt-2 hidden"></div>
+        </div>
+
+        <!-- Chat List Header -->
+        <div class="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center bg-slate-950/40">
+          <span>المحادثات الأخيرة</span>
+          <i class="fa-solid fa-message text-slate-500"></i>
+        </div>
+
+        <!-- Chat List Container -->
+        <div id="chat-list" class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+          <!-- Chat Items Injected by JS -->
+        </div>
+      </aside>
+
+      <!-- CHAT VIEW AREA -->
+      <main class="flex-1 flex flex-col h-full bg-slate-950/60 relative">
+        <!-- Active Chat Header -->
+        <div id="chat-header" class="p-3 sm:p-4 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white p-1">
+              <i class="fa-solid fa-arrow-right text-lg"></i>
+            </button>
+            <div id="header-avatar" class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white uppercase text-base shadow">
+              ?
+            </div>
+            <div>
+              <h3 id="header-name" class="font-bold text-sm text-white">اختر محادثة لبدء الدردشة</h3>
+              <p id="header-status" class="text-[11px] text-slate-400"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div id="messages-container" class="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-3">
+          <!-- Empty State -->
+          <div id="no-chat-selected" class="h-full flex flex-col items-center justify-center text-slate-500">
+            <i class="fa-regular fa-comments text-5xl mb-3 opacity-30"></i>
+            <p class="text-sm">ابحث عن مستخدم واضغط "محادثة" للبدء</p>
+          </div>
+        </div>
+
+        <!-- Message Input Box -->
+        <div id="input-container" class="p-3 border-t border-slate-800 bg-slate-900 hidden">
+          <form onsubmit="sendMessage(event)" class="flex items-center gap-2">
+            <input type="text" id="message-input" autocomplete="off" placeholder="اكتب رسالتك هنا..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+            <button type="submit" class="w-10 h-10 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white rounded-xl flex items-center justify-center transition shadow-lg shadow-indigo-600/30">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </form>
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <script>
+    // Global State Management
+    let isRegisterMode = false;
+    let currentUser = null;
+    let activeChatUser = null;
+
+    // Database Initialization (Using localStorage)
+    function getUsersDB() {
+      const users = localStorage.getItem('nexus_users');
+      return users ? JSON.parse(users) : [
+        { username: 'admin', password: '123' },
+        { username: 'sara', password: '123' },
+        { username: 'omar', password: '123' }
+      ];
+    }
+
+    function saveUsersDB(users) {
+      localStorage.setItem('nexus_users', JSON.stringify(users));
+    }
+
+    function getMessagesDB() {
+      const msgs = localStorage.getItem('nexus_messages');
+      return msgs ? JSON.parse(msgs) : [];
+    }
+
+    function saveMessagesDB(messages) {
+      localStorage.setItem('nexus_messages', JSON.stringify(messages));
+    }
+
+    // Auth Screen Handlers
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      const title = document.getElementById('auth-title');
+      const subtitle = document.getElementById('auth-subtitle');
+      const btn = document.getElementById('auth-submit-btn');
+      const toggleText = document.getElementById('auth-toggle-text');
+      const alert = document.getElementById('auth-alert');
+      
+      alert.classList.add('hidden');
+
+      if (isRegisterMode) {
+        title.textContent = "إنشاء حساب جديد";
+        subtitle.textContent = "أدخل اسم مستخدم وكلمة سر للبدء فوراً";
+        btn.textContent = "إنشاء الحساب";
+        toggleText.innerHTML = 'لديك حساب بالفعل؟ <button onclick="toggleAuthMode()" class="text-indigo-400 font-bold hover:underline mr-1">تسجيل الدخول</button>';
+      } else {
+        title.textContent = "تسجيل الدخول";
+        subtitle.textContent = "مرحباً بك مجدداً! أدخل بياناتك للبدء";
+        btn.textContent = "تسجيل الدخول";
+        toggleText.innerHTML = 'ليس لديك حساب؟ <button onclick="toggleAuthMode()" class="text-indigo-400 font-bold hover:underline mr-1">إنشاء حساب جديد</button>';
+      }
+    }
+
+    function showAlert(message, isError = true) {
+      const alert = document.getElementById('auth-alert');
+      alert.textContent = message;
+      alert.className = `mb-4 p-3 rounded-xl text-xs font-semibold text-center border ${
+        isError ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+      }`;
+      alert.classList.remove('hidden');
+    }
+
+    function handleAuthSubmit(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('username-input').value.trim().toLowerCase();
+      const passwordInput = document.getElementById('password-input').value;
+
+      if (!usernameInput || !passwordInput) {
+        showAlert("يرجى ملء جميع الحقول المطلوبة");
+        return;
+      }
+
+      const users = getUsersDB();
+
+      if (isRegisterMode) {
+        // Register Flow
+        const exists = users.find(u => u.username === usernameInput);
+        if (exists) {
+          showAlert("اسم المستخدم هذا مأخوذ بالفعل، اختر اسماً آخر");
+          return;
+        }
+        users.push({ username: usernameInput, password: passwordInput });
+        saveUsersDB(users);
+        showAlert("تم إنشاء الحساب بنجاح! جاري الدخول...", false);
+        setTimeout(() => loginUser(usernameInput), 1000);
+      } else {
+        // Login Flow
+        const user = users.find(u => u.username === usernameInput && u.password === passwordInput);
+        if (!user) {
+          showAlert("اسم المستخدم أو كلمة السر غير صحيحة!");
+          return;
+        }
+        loginUser(usernameInput);
+      }
+    }
+
+    function loginUser(username) {
+      currentUser = username;
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      
+      document.getElementById('display-user-name').textContent = currentUser;
+      document.getElementById('user-avatar').textContent = currentUser.charAt(0);
+
+      renderChatList();
+    }
+
+    function logout() {
+      currentUser = null;
+      activeChatUser = null;
+      document.getElementById('main-app').classList.add('hidden');
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('username-input').value = '';
+      document.getElementById('password-input').value = '';
+    }
+
+    // Search User Logic
+    function searchUser() {
+      const query = document.getElementById('search-username-input').value.trim().toLowerCase();
+      const container = document.getElementById('search-result-container');
+
+      if (!query) {
+        container.classList.add('hidden');
+        return;
+      }
+
+      if (query === currentUser) {
+        container.innerHTML = `<p class="text-[11px] text-amber-400 bg-amber-500/10 p-2 rounded-lg text-center">لا يمكنك إجراء محادثة مع نفسك!</p>`;
+        container.classList.remove('hidden');
+        return;
+      }
+
+      const users = getUsersDB();
+      const userFound = users.find(u => u.username === query);
+
+      container.classList.remove('hidden');
+
+      if (userFound) {
+        container.innerHTML = `
+          <div class="bg-slate-800 border border-indigo-500/40 p-2.5 rounded-xl flex items-center justify-between shadow-md">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-xs uppercase text-white">
+                ${userFound.username.charAt(0)}
+              </div>
+              <span class="text-xs font-bold text-white">${userFound.username}</span>
+            </div>
+            <button onclick="startChat('${userFound.username}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1">
+              <i class="fa-solid fa-comment-dots"></i> محادثة
+            </button>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `<p class="text-[11px] text-red-400 bg-red-500/10 p-2 rounded-lg text-center">المستخدم غير موجود!</p>`;
+      }
+    }
+
+    // Chat Operations
+    function startChat(targetUsername) {
+      activeChatUser = targetUsername;
+      document.getElementById('search-result-container').classList.add('hidden');
+      document.getElementById('search-username-input').value = '';
+      
+      // Update Chat Header
+      document.getElementById('header-avatar').textContent = targetUsername.charAt(0);
+      document.getElementById('header-name').textContent = targetUsername;
+      document.getElementById('header-status').textContent = "متصل الآن";
+      document.getElementById('input-container').classList.remove('hidden');
+      document.getElementById('no-chat-selected').classList.add('hidden');
+
+      renderChatList();
+      renderMessages();
+    }
+
+    function renderChatList() {
+      const chatList = document.getElementById('chat-list');
+      const messages = getMessagesDB();
+      
+      // Find all distinct users current user chatted with
+      const chatPartners = new Set();
+      messages.forEach(m => {
+        if (m.sender === currentUser) chatPartners.add(m.receiver);
+        if (m.receiver === currentUser) chatPartners.add(m.sender);
+      });
+
+      if (activeChatUser) chatPartners.add(activeChatUser);
+
+      chatList.innerHTML = '';
+
+      if (chatPartners.size === 0) {
+        chatList.innerHTML = `<p class="text-xs text-center text-slate-500 py-4">لا توجد محادثات قائمة</p>`;
+        return;
+      }
+
+      chatPartners.forEach(partner => {
+        const isActive = partner === activeChatUser;
+        const div = document.createElement('div');
+        div.onclick = () => startChat(partner);
+        div.className = `p-2.5 rounded-xl flex items-center gap-3 cursor-pointer transition ${
+          isActive ? 'bg-indigo-600 text-white font-bold' : 'hover:bg-slate-800 text-slate-300'
+        }`;
+        
+        div.innerHTML = `
+          <div class="w-9 h-9 rounded-full ${isActive ? 'bg-white text-indigo-600' : 'bg-slate-700 text-white'} flex items-center justify-center font-bold text-sm uppercase">
+            ${partner.charAt(0)}
+          </div>
+          <div class="flex-1 overflow-hidden">
+            <h4 class="text-xs font-bold truncate">${partner}</h4>
+            <p class="text-[10px] ${isActive ? 'text-indigo-200' : 'text-slate-400'} truncate">اضغط لفتح المحادثة</p>
+          </div>
+        `;
+        chatList.appendChild(div);
+      });
+    }
+
+    function renderMessages() {
+      const container = document.getElementById('messages-container');
+      if (!activeChatUser) return;
+
+      const allMessages = getMessagesDB();
+      const currentChatMsgs = allMessages.filter(
+        m => (m.sender === currentUser && m.receiver === activeChatUser) ||
+             (m.sender === activeChatUser && m.receiver === currentUser)
+      );
+
+      container.innerHTML = '';
+
+      if (currentChatMsgs.length === 0) {
+        container.innerHTML = `
+          <div class="h-full flex flex-col items-center justify-center text-slate-500">
+            <p class="text-xs">لا توجد رسائل سابقة. أرسل أول رسالة الآن!</p>
+          </div>
+        `;
+        return;
+      }
+
+      currentChatMsgs.forEach(msg => {
+        const isMe = msg.sender === currentUser;
+        const wrapper = document.createElement('div');
+        wrapper.className = `flex ${isMe ? 'justify-end' : 'justify-start'} mb-2`;
+
+        wrapper.innerHTML = `
+          <div class="max-w-[75%] rounded-2xl px-4 py-2.5 text-xs ${
+            isMe 
+              ? 'bg-indigo-600 text-white rounded-br-none shadow-md' 
+              : 'bg-slate-800 text-slate-100 rounded-bl-none border border-slate-700'
+          }">
+            <p class="leading-relaxed break-words">${escapeHTML(msg.text)}</p>
+            <span class="block text-[9px] ${isMe ? 'text-indigo-200' : 'text-slate-400'} text-left mt-1">${msg.time}</span>
+          </div>
+        `;
+        container.appendChild(wrapper);
+      });
+
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function sendMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('message-input');
+      const text = input.value.trim();
+
+      if (!text || !activeChatUser) return;
+
+      const messages = getMessagesDB();
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      messages.push({
+        sender: currentUser,
+        receiver: activeChatUser,
+        text: text,
+        time: timeStr
+      });
+
+      saveMessagesDB(messages);
+      input.value = '';
+      renderMessages();
+      renderChatList();
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, 
+        tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+      );
+    }
+
+    function toggleMobileSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      sidebar.classList.toggle('hidden');
+    }
+  </script>
+</body>
+</html>
